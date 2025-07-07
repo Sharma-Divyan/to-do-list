@@ -1,20 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css" />
-    <title>Todo List</title>
-  </head>
-  <body>
-    <h1>todos</h1>
-    <form id="form">
-      <input type="text" class="input" id="input" placeholder="Enter your todo" autocomplete="off">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Todo List App</title>
 
-      <ul class="todos" id="todos"></ul>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container my-5">
+    <h2 class="text-center mb-4">📝 Todo List App</h2>
+
+    <!-- Add Todo Form -->
+    <form id="addTodoForm" class="row g-3 mb-4">
+      <div class="col-md-6">
+        <input type="text" id="newTodo" class="form-control" placeholder="Enter new task" required />
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Add Todo</button>
+      </div>
     </form>
-    <small>Left click to toggle completed. <br> Right click to delete todo</small>
 
-    <script src="script.js"></script>
-  </body>
+    <!-- Filters -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <input type="text" id="search" class="form-control" placeholder="Search by task..." />
+      </div>
+      <div class="col-md-3">
+        <input type="date" id="fromDate" class="form-control" />
+      </div>
+      <div class="col-md-3">
+        <input type="date" id="toDate" class="form-control" />
+      </div>
+      <div class="col-md-2">
+        <button id="resetFilters" class="btn btn-secondary w-100">Reset</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="text-center my-3 d-none">
+      <div class="spinner-border" role="status"></div>
+    </div>
+
+    <!-- Error -->
+    <div id="error" class="alert alert-danger d-none"></div>
+
+    <!-- Todo List -->
+    <ul id="todoList" class="list-group mb-3"></ul>
+
+    <!-- Pagination -->
+    <nav>
+      <ul class="pagination justify-content-center" id="pagination"></ul>
+    </nav>
+  </div>
+
+  <!-- Custom JS -->
+  <script src="script.js"></script>
+</body>
 </html>
