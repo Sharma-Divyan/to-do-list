@@ -1,65 +1,151 @@
-const form = document.getElementById('form')
-const input = document.getElementById('input')
-const todosUL = document.getElementById('todos')
+const API_URL = 'https://dummyjson.com/todos';
+let todos = [];
+let filteredTodos = [];
+let currentPage = 1;
+const pageSize = 5;
 
-const todos = JSON.parse(localStorage.getItem('todos'))
+const todoList = document.getElementById('todoList');
+const addTodoForm = document.getElementById('addTodoForm');
+const newTodoInput = document.getElementById('newTodo');
+const searchInput = document.getElementById('search');
+const fromDateInput = document.getElementById('fromDate');
+const toDateInput = document.getElementById('toDate');
+const loadingDiv = document.getElementById('loading');
+const errorDiv = document.getElementById('error');
+const pagination = document.getElementById('pagination');
+const resetBtn = document.getElementById('resetFilters');
 
-if(todos) {
-    todos.forEach(todo => addTodo(todo))
-}
+const addMockDates = (data) =>
+  data.map((item, index) => ({
+    ...item,
+    createdAt: new Date(Date.now() - index * 86400000).toISOString().split('T')[0],
+  }));
 
-form.addEventListener('submit', (e) => {
-    e.preventDefault()
+const showLoading = (show) => {
+  loadingDiv.classList.toggle('d-none', !show);
+};
 
-    addTodo()
-})
+const showError = (message = '') => {
+  errorDiv.classList.toggle('d-none', !message);
+  errorDiv.textContent = message;
+};
 
-function addTodo(todo) {
-    let todoText = input.value
+const paginate = (items, page, pageSize) => {
+  const start = (page - 1) * pageSize;
+  return items.slice(start, start + pageSize);
+};
 
-    if(todo) {
-        todoText = todo.text
-    }
+const renderPagination = (total) => {
+  pagination.innerHTML = '';
+  const pageCount = Math.ceil(total / pageSize);
+  for (let i = 1; i <= pageCount; i++) {
+    const li = document.createElement('li');
+    li.className = 'page-item' + (i === currentPage ? ' active' : '');
+    li.innerHTML = `<button class="page-link">${i}</button>`;
+    li.addEventListener('click', () => {
+      currentPage = i;
+      renderTodos();
+    });
+    pagination.appendChild(li);
+  }
+};
 
-    if(todoText) {
-        const todoEl = document.createElement('li')
-        if(todo && todo.completed) {
-            todoEl.classList.add('completed')
-        }
+const renderTodos = () => {
+  todoList.innerHTML = '';
+  let displayTodos = [...filteredTodos];
 
-        todoEl.innerText = todoText
+  const searchText = searchInput.value.toLowerCase();
+  if (searchText) {
+    displayTodos = displayTodos.filter((todo) =>
+      todo.todo.toLowerCase().includes(searchText)
+    );
+  }
 
-        todoEl.addEventListener('click', () => {
-            todoEl.classList.toggle('completed')
-            updateLS()
-        }) 
+  const from = fromDateInput.value;
+  const to = toDateInput.value;
+  if (from) displayTodos = displayTodos.filter((t) => t.createdAt >= from);
+  if (to) displayTodos = displayTodos.filter((t) => t.createdAt <= to);
 
-        todoEl.addEventListener('contextmenu', (e) => {
-            e.preventDefault()
+  const pageTodos = paginate(displayTodos, currentPage, pageSize);
+  pageTodos.forEach((todo) => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.innerHTML = `
+      <span>${todo.todo}</span>
+      <small class="text-muted">${todo.createdAt}</small>
+    `;
+    todoList.appendChild(li);
+  });
 
-            todoEl.remove()
-            updateLS()
-        }) 
+  renderPagination(displayTodos.length);
+};
 
-        todosUL.appendChild(todoEl)
+const fetchTodos = async () => {
+  showLoading(true);
+  showError('');
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error('Failed to fetch todos');
+    const data = await res.json();
+    todos = addMockDates(data.todos);
+    filteredTodos = [...todos];
+    renderTodos();
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    showLoading(false);
+  }
+};
 
-        input.value = ''
+const addTodo = async (text) => {
+  showError('');
+  try {
+    const res = await fetch(API_URL + '/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ todo: text, completed: false, userId: 1 }),
+    });
+    if (!res.ok) throw new Error('Failed to add todo');
+    const newTodo = await res.json();
+    newTodo.createdAt = new Date().toISOString().split('T')[0];
+    todos.unshift(newTodo);
+    filteredTodos = [...todos];
+    newTodoInput.value = '';
+    currentPage = 1;
+    renderTodos();
+  } catch (err) {
+    showError(err.message);
+  }
+};
 
-        updateLS()
-    }
-}
+// Event Listeners
+addTodoForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = newTodoInput.value.trim();
+  if (text) addTodo(text);
+});
 
-function updateLS() {
-    todosEl = document.querySelectorAll('li')
+searchInput.addEventListener('input', () => {
+  currentPage = 1;
+  renderTodos();
+});
 
-    const todos = []
+fromDateInput.addEventListener('change', () => {
+  currentPage = 1;
+  renderTodos();
+});
 
-    todosEl.forEach(todoEl => {
-        todos.push({
-            text: todoEl.innerText,
-            completed: todoEl.classList.contains('completed')
-        })
-    })
+toDateInput.addEventListener('change', () => {
+  currentPage = 1;
+  renderTodos();
+});
 
-    localStorage.setItem('todos', JSON.stringify(todos))
-}
+resetBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  fromDateInput.value = '';
+  toDateInput.value = '';
+  currentPage = 1;
+  renderTodos();
+});
+
+fetchTodos();
